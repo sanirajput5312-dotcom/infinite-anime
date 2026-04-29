@@ -9,35 +9,42 @@
       font-family: Arial;
       background: #0f172a;
       color: white;
+      text-align: center;
     }
 
     header {
       background: #111827;
       padding: 15px;
-      text-align: center;
       font-size: 24px;
-      font-weight: bold;
       color: #f43f5e;
     }
 
-    .container {
+    input {
+      padding: 10px;
+      width: 70%;
+      margin: 10px;
+    }
+
+    button {
+      padding: 10px;
+      background: #f43f5e;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+
+    .grid {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      padding: 20px;
-      gap: 20px;
     }
 
     .card {
       background: #1f2937;
-      border-radius: 10px;
+      margin: 10px;
       width: 200px;
+      border-radius: 10px;
       overflow: hidden;
-      transition: 0.3s;
-    }
-
-    .card:hover {
-      transform: scale(1.05);
     }
 
     .card img {
@@ -46,13 +53,15 @@
       object-fit: cover;
     }
 
-    .card h3 {
-      margin: 10px;
+    video {
+      width: 80%;
+      margin-top: 20px;
     }
 
-    .card p {
-      margin: 0 10px 10px;
-      color: #9ca3af;
+    .ad {
+      background: #222;
+      padding: 10px;
+      margin: 10px;
     }
   </style>
 </head>
@@ -61,27 +70,83 @@
 
 <header>🔥 Infinite Anime</header>
 
-<div class="container">
+<input id="search" placeholder="Search anime...">
+<button onclick="search()">Search</button>
 
-  <div class="card">
-    <img src="https://wallpapercave.com/wp/wp1811240.jpg">
-    <h3>Naruto</h3>
-    <p>Episodes: 220</p>
-  </div>
+<div id="anime" class="grid"></div>
 
-  <div class="card">
-    <img src="https://wallpapercave.com/wp/wp4327833.jpg">
-    <h3>Attack on Titan</h3>
-    <p>Seasons: 4</p>
-  </div>
+<h2>Upload (Admin)</h2>
+<input id="title" placeholder="Title"><br>
+<input id="url" placeholder="Video URL"><br>
+<input id="key" placeholder="Admin key"><br>
+<button onclick="upload()">Upload</button>
 
-  <div class="card">
-    <img src="https://wallpapercave.com/wp/wp4923992.jpg">
-    <h3>Demon Slayer</h3>
-    <p>Popular Anime</p>
-  </div>
+<h2>Videos</h2>
+<div id="videos"></div>
 
-</div>
+<script>
+
+// SEARCH ANIME (images + info)
+async function search() {
+  const q = document.getElementById("search").value;
+  const res = await fetch("/api/search?q=" + q);
+  const data = await res.json();
+
+  const div = document.getElementById("anime");
+  div.innerHTML = "";
+
+  data.slice(0, 8).forEach(a => {
+    div.innerHTML += `
+      <div class="card">
+        <img src="${a.images.jpg.image_url}">
+        <h3>${a.title}</h3>
+      </div>
+    `;
+  });
+}
+
+// LOAD VIDEOS
+async function loadVideos() {
+  const res = await fetch("/api/videos");
+  const data = await res.json();
+
+  const div = document.getElementById("videos");
+  div.innerHTML = "";
+
+  data.forEach(v => {
+    div.innerHTML += `
+      <div>
+        <h3>${v.title}</h3>
+
+        <div class="ad">Ad Space</div>
+
+        <video controls src="${v.url}"></video>
+
+        <div class="ad">Ad Space</div>
+      </div>
+    `;
+  });
+}
+
+// UPLOAD VIDEO
+async function upload() {
+  const title = document.getElementById("title").value;
+  const url = document.getElementById("url").value;
+  const key = document.getElementById("key").value;
+
+  await fetch("/api/upload", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ title, url, key })
+  });
+
+  alert("Uploaded!");
+  loadVideos();
+}
+
+loadVideos();
+
+</script>
 
 </body>
 </html>
