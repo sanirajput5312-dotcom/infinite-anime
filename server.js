@@ -1,38 +1,52 @@
+
 const express = require("express");
 const fetch = require("node-fetch");
-const app = express();
 
+const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
 app.use(express.static("public"));
 
-// Local video storage (temporary)
-let videos = [];
-
-// Get videos
-app.get("/api/videos", (req, res) => {
-  res.json(videos);
-});
-
-// Upload video (admin only)
-app.post("/api/upload", (req, res) => {
-  const { title, url, key } = req.body;
-
-  if (key !== "admin123") {
-    return res.status(403).send("Unauthorized");
-  }
-
-  videos.push({ title, url });
-  res.send("Uploaded");
-});
-
-// Search anime (Jikan API)
+// AniList API route
 app.get("/api/search", async (req, res) => {
-  const q = req.query.q;
-  const response = await fetch(`https://api.jikan.moe/v4/anime?q=${q}`);
-  const data = await response.json();
-  res.json(data.data);
+  const q = req.query.q || "anime";
+
+  const query = `
+    query ($search: String) {
+      Page(perPage: 20) {
+        media(search: $search, type: ANIME) {
+          id
+          title {
+            romaji
+          }
+          description
+          coverImage {
+            large
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await fetch("https://graphql.anilist.co", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        query,
+        variables: { search: q }
+      })
+    });
+
+    const data = await response.json();
+    res.json(data.data.Page.media);
+  } catch (err) {
+    res.status(500).send("Error fetching anime");
+  }
 });
 
-app.listen(PORT, () => console.log("Server running"));
+app.listen(PORT, () => {
+  console.log("Server running");
+});
